@@ -1,6 +1,6 @@
-const Buttonx = ({ text }) => {
+const Buttonx = ({ text, onClickFunction, className }) => {
     return (
-        <button className="block bg-blue-500 text-white p-2 rounded hover:bg-blue-600">{text}</button>
+        <button onClick={onClickFunction} className={className}>{text}</button>
     )
 }
 export default Buttonx;

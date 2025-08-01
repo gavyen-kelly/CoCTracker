@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import SearchBox from '../components/SearchBox';
 import Buttonx from '../components/Buttonx';
@@ -16,19 +16,33 @@ function HomePage() {
     const [searchType, setSearchType] = useState('clan')
     const navigate = useNavigate()
 
+    useEffect(() => {
+        console.log('searchType updated:', searchType);
+    }, [searchType]);
+
     const handleSearch = async (query) => {
-        if (!query) return
+        if (!query) {
+            setError('Please enter a search query');
+            return
+        }
         setError(null)
         setResults([])
         try {
-            const endpoint = searchType === 'clan' ? '/api/clans' : '/api/players'
-            const response = await api.get(endpoint, { params: { query } })
-            const data = searchType === 'clan' ? response.data.items : [response.data]
-            setResults(data)
-            console.log('Search results: ', response.data)
+            let response;
+            if (searchType === 'clan') {
+                response = await api.get('/api/clans', { params: { query } })
+                setResults(response.data.items || [])
+            } else {
+                const playerTag = query.replace('#', '').trim().toUpperCase();
+                if (!playerTag.match(/^[0-9A-Z]{3,}$/)) {
+                    setError('Invalid player tag. Use alphanumeric characters (e.g., #2PP).');
+                    return;
+                }
+                response = await api.get(`/api/players/${playerTag}`);
+                setResults([response.data]);
+            }
+            console.log('Search Results: ', response.data);
         } catch (err) {
-            setError('Failed to fetch data')
-            console.error(err)
         }
     }
     const handleResultClick = (item) => {
@@ -42,14 +56,18 @@ function HomePage() {
             <div className='flex flex-row flex-nowrap justify-center items-center gap-2 mt-4'>
                 <SearchBox onSearch={handleSearch} />
                 <Buttonx
-                    className={`bg-blue-500 text-white p-2 rounded ${searchType === 'clan' ? 'opacity-100' : 'opacity-50'}`}
+                    className={`bg-blue-500 text-white p-2 hover:cursor-pointer rounded ${searchType === 'clan' ? 'opacity-100' : 'opacity-50'}`}
                     text='Clan'
-                    onClick={() => setSearchType('clan')}
+                    onClickFunction={() => {
+                        setSearchType('clan')
+                    }}
                 />
                 <Buttonx
-                    className={`bg-blue-500 text-white p-2 rounded ${searchType === 'player' ? 'opacity-100' : 'opacity-50'}`}
+                    className={`bg-blue-500 text-white p-2 hover:cursor-pointer rounded ${searchType === 'player' ? 'opacity-100' : 'opacity-50'}`}
                     text='Player'
-                    onClick={() => setSearchType('player')}
+                    onClickFunction={() => {
+                        setSearchType('player')
+                    }}
                 />
             </div>
             {error && <p className='mt-4 text-red-500'>{error}</p>}
